@@ -3,9 +3,9 @@
 [![PyPI version](https://badge.fury.io/py/micropython-max30102.svg)](https://badge.fury.io/py/micropython-max30102)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/micropython-max30102?color=blue&label=upip%20installations)
 
-# Maxim MAX30102 MicroPython driver
+# Maxim MAX30102 CircuitPython driver
 
-A port of the SparkFun driver for Maxim MAX30102 sensor to MicroPython.
+A port of the SparkFun driver for Maxim MAX30102 sensor to CircuitPython from the [excellent work of n-elia](https://github.com/n-elia/MAX30102-MicroPython-driver).
 
 It _should_ work for MAX30105, too. If you have the chance to test this library with a MAX30105, please leave your
 feedback in the Discussions section.
