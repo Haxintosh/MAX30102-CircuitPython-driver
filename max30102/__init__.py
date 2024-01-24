@@ -14,9 +14,15 @@
 # This driver aims at giving almost full access to Maxim MAX30102 functionalities.
 #                                                                          n-elia
 
-from machine import SoftI2C
-from ustruct import unpack
-from utime import sleep_ms, ticks_diff, ticks_ms
+# Fork of the MicroPython library for MAX3010x for CircuitPython
+# Tested (ish) on RP2040 with MAX30102
+
+import time
+import busio
+from struct import unpack
+
+# from typing import Union
+# from utime import sleep_ms, ticks_diff, ticks_ms
 
 from max30102.circular_buffer import CircularBuffer
 
@@ -155,7 +161,7 @@ MAX_30105_EXPECTED_PART_ID = 0x15
 # Size of the queued readings
 STORAGE_QUEUE_SIZE = 4
 
-
+SCRAPBUFFER = bytearray(3)
 # Data structure to hold the last readings
 class SensorData:
     def __init__(self):
@@ -167,7 +173,7 @@ class SensorData:
 # Sensor class
 class MAX30102(object):
     def __init__(self,
-                 i2c: SoftI2C,
+                 i2c: busio.I2C,
                  i2c_hex_address=MAX3010X_I2C_ADDRESS,
                  ):
         self.i2c_address = i2c_hex_address
@@ -283,7 +289,7 @@ class MAX30102(object):
         self.set_bitmask(MAX30105_MODE_CONFIG, MAX30105_RESET_MASK, MAX30105_RESET)
         curr_status = -1
         while not ((curr_status & MAX30105_RESET) == 0):
-            sleep_ms(10)
+            time.sleep(0.1)
             curr_status = ord(self.i2c_read_register(MAX30105_MODE_CONFIG))
 
     # Power states methods
@@ -500,10 +506,10 @@ class MAX30102(object):
 
         # Poll for bit to clear, reading is then complete
         reading = ord(self.i2c_read_register(MAX30105_INT_STAT_2))
-        sleep_ms(100)
+        time.sleep(0.1)
         while (reading & MAX30105_INT_DIE_TEMP_RDY_ENABLE) > 0:
             reading = ord(self.i2c_read_register(MAX30105_INT_STAT_2))
-            sleep_ms(1)
+            time.sleep(0.001)
 
         # Read die temperature register (integer)
         tempInt = ord(self.i2c_read_register(MAX30105_DIE_TEMP_INT))
@@ -559,9 +565,10 @@ class MAX30102(object):
 
     # Low-level I2C Communication
     def i2c_read_register(self, REGISTER, n_bytes=1):
+        SCRAPBUFFER = bytearray(n_bytes)
         self._i2c.writeto(self.i2c_address, bytearray([REGISTER]))
-        return self._i2c.readfrom(self.i2c_address, n_bytes)
-
+        self._i2c.readfrom_into(self.i2c_address, buffer=SCRAPBUFFER, end=n_bytes)
+        return bytes(SCRAPBUFFER)
     def i2c_set_register(self, REGISTER, VALUE):
         self._i2c.writeto(self.i2c_address, bytearray([REGISTER, VALUE]))
         return
@@ -579,8 +586,13 @@ class MAX30102(object):
         self.i2c_set_register(reg, originalContents | thing)
 
     def fifo_bytes_to_int(self, fifo_bytes):
-        value = unpack(">i", b'\x00' + fifo_bytes)
+        value = unpack(">i", b'\x00' + fifo_bytes) # works for max30102, rp2040
         return (value[0] & 0x3FFFF) >> self._pulse_width
+
+    # def fifo_bytes_to_int(self, fifo_bytes):
+    #     value = unpack(">I", b'\x00\x00\x00' + fifo_bytes)[0]
+    #     return (value & 0xFFFFF) >> self._pulse_width
+
 
     # Returns how many samples are available
     def available(self):
@@ -662,7 +674,7 @@ class MAX30102(object):
             for i in range(number_of_samples):
                 # Read a number of bytes equal to activeLEDs*3 (= 1 sample)
                 fifo_bytes = self.i2c_read_register(MAX30105_FIFO_DATA,
-                                                    self._multi_led_read_mode)
+                                                    n_bytes=self._multi_led_read_mode)
 
                 # Convert the readings from bytes to integers, depending
                 # on the number of active LEDs
@@ -688,12 +700,13 @@ class MAX30102(object):
 
     # Check for new data but give up after a certain amount of time
     def safe_check(self, max_time_to_check):
-        mark_time = ticks_ms()
+        mark_time = time.monotonic()*1000
         while True:
-            if ticks_diff(ticks_ms(), mark_time) > max_time_to_check:
+            elapsed_time = time.monotonic()*1000 - mark_time
+            if elapsed_time > max_time_to_check:
                 # Timeout reached
                 return False
             if self.check():
                 # new data found
                 return True
-            sleep_ms(1)
+            time.sleep(0.001)
