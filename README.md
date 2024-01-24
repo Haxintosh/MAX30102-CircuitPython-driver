@@ -1,8 +1,3 @@
-[![Upload Python Package](https://github.com/n-elia/MAX30102-MicroPython-driver/actions/workflows/python-publish.yml/badge.svg)](https://github.com/n-elia/MAX30102-MicroPython-driver/actions/workflows/python-publish.yml)
-[![Pre-compile modules](https://github.com/n-elia/MAX30102-MicroPython-driver/actions/workflows/pre-compile.yml/badge.svg)](https://github.com/n-elia/MAX30102-MicroPython-driver/actions/workflows/pre-compile.yml)
-[![PyPI version](https://badge.fury.io/py/micropython-max30102.svg)](https://badge.fury.io/py/micropython-max30102)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/micropython-max30102?color=blue&label=upip%20installations)
-
 # Maxim MAX30102 CircuitPython driver
 
 A port of the SparkFun driver for Maxim MAX30102 sensor to CircuitPython from the [excellent work of n-elia](https://github.com/n-elia/MAX30102-MicroPython-driver).
