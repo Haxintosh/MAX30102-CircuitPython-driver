@@ -1,4 +1,4 @@
-from ucollections import deque
+from collections import deque
 
 
 class CircularBuffer(object):
